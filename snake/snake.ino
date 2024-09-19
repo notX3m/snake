@@ -3,6 +3,15 @@
 CRGB leds[NUM_LEDS];
 #define DATA_PIN 2
 
+// struct Coordinate {
+//   int X;
+//   int Y;
+// }
+// int headX = 8;
+// int headY = 8;
+// int head = 8;
+//Coordinate head = {8, 8};
+
 
 int X = 8;
 int Y = 8;
@@ -19,7 +28,7 @@ int Xm = 0;
 int Ym = 0;
 unsigned long time = 0;
 
-long Mvdelay = 500;
+long Mvdelay = 100;
 int i;
 int game = 0;
 CRGB colors[] = {
@@ -96,16 +105,13 @@ void loop() {
     }
   }
 
+  // calculations
   if (time<millis()) {
     X = X + Xm;
     Y = Y - Ym;
     time = Mvdelay + millis();
-    // Serial.print("Xm value = ");
-    // Serial.print(Xm);
-    // Serial.print(" ");
-    // Serial.print("Ym value = ");
-    // Serial.println(Ym);
-   
+
+    // border check   
     if (X>15 || Y>15 || X<0 || Y<0) {
       X = 8;
       Y = 8;
@@ -114,10 +120,17 @@ void loop() {
       game++;
     }
 
+    // clear matrix
     clear(CRGB::Black);
+    
+    // pick color of snake head
     int colori = game%16;
     CRGB color = colors[colori];
+
+    // draw snake
     set(X, Y, color);
+
+    // show leds
     FastLED.show();
   }
 
