@@ -1,35 +1,33 @@
 #include <FastLED.h>
 #define NUM_LEDS 256 // 16x16 matrix
-CRGB leds[NUM_LEDS];
 #define DATA_PIN 2
 
-// struct Coordinate {
-//   int X;
-//   int Y;
-// }
-// int headX = 8;
-// int headY = 8;
-// int head = 8;
-//Coordinate head = {8, 8};
+CRGB leds[NUM_LEDS];
 
+
+int BodyX[256] = {8,8,8};
+int BodyY[256] = {8,7,6};
+int BodyL = 3;
 
 int X = 8;
 int Y = 8;
 
-
+int gameStatus = 0;
+// 0 - not started
+// 1 - game in progress
+// 2 - game over
 int Xpin=A0;
 int Ypin=A1;
 int Spin=3;
+int Sval;
 float Xval;
 float Yval;
-int Sval;
-int Dt=200;
 int Xm = 0;
 int Ym = 0;
 unsigned long time = 0;
 
 long Mvdelay = 100;
-int i;
+
 int game = 0;
 CRGB colors[] = {
   CRGB::Red,        // Red
@@ -68,7 +66,11 @@ void set(int xcoor, int ycoor, CRGB color) {
   else {
     i = ycoor * 16 + (15-xcoor);
   }
-  leds[i] = color;
+
+  // check if we are out leds bounds
+  if (i>=0 && i<=255) {
+    leds[i] = color;
+  }
 }
 
 void clear(CRGB color) {
@@ -88,7 +90,9 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  
+  
+  // calculate joystick
   Xval=analogRead(Xpin);
   Yval=analogRead(Ypin);
   Sval=digitalRead(Spin);
@@ -98,37 +102,51 @@ void loop() {
     if (abs(Xval)>abs(Yval)) {
       Xm = sign(Xval);
       Ym = 0;
+      gameStatus = 1;
     }
-    else {
+    else
+    {
       Ym = sign(Yval);
       Xm = 0;
     }
   }
 
+
   // calculations
   if (time<millis()) {
-    X = X + Xm;
-    Y = Y - Ym;
-    time = Mvdelay + millis();
 
-    // border check   
-    if (X>15 || Y>15 || X<0 || Y<0) {
-      X = 8;
-      Y = 8;
-      // Xm = 0;
-      // Ym = 0;
-      game++;
+    // calculations
+    // we do calculations only in game in progress mode
+    if (gameStatus==1) {
+      X = X + Xm;
+      Y = Y - Ym;
+      time = Mvdelay + millis();
+
+      // border check   
+      if (X>15 || Y>15 || X<0 || Y<0) {
+        game++;
+        gameStatus = 2;
+      }
+
+      // move body
+      for (int i = BodyL;i>0;i--) {
+        BodyX[i] = BodyX[i-1];
+        BodyY[i] = BodyY[i-1];
+      }
+
+      // asign head
+      BodyX[0] = X;
+      BodyY[0] = Y;
     }
 
     // clear matrix
     clear(CRGB::Black);
-    
-    // pick color of snake head
-    int colori = game%16;
-    CRGB color = colors[colori];
 
-    // draw snake
-    set(X, Y, color);
+    // draw body
+    for (int i = 0; i<BodyL; i++) {
+      set(BodyX[i], BodyY[i], CRGB::Green);
+    }
+    set(BodyX[0], BodyY[0], CRGB::Red);
 
     // show leds
     FastLED.show();
@@ -137,17 +155,5 @@ void loop() {
 
 
   
-
-  /*
-  delay(Dt);
-  Serial.print("X value = ");
-  Serial.print(Xm);
-  Serial.print(" ");
-  Serial.print("Y value = ");
-  Serial.print(Ym);
-  Serial.print(" ");
-  Serial.print("Switch state is ");
-  Serial.println(Sval);
-  */
 
 }
