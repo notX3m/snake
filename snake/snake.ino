@@ -5,19 +5,24 @@
 CRGB leds[NUM_LEDS];
 
 
-int BodyX[256] = {8,8,8};
-int BodyY[256] = {8,7,6};
+int BodyX[64] = {8,8,8};
+int BodyY[64] = {8,7,6};
 int BodyL = 3;
 
 int X = 8;
 int Y = 8;
 
-int gameStatus = 0;
-// 0 - not started
-// 1 - game in progress
-// 2 - game over
-int Xpin=A0;
-int Ypin=A1;
+int NOT_STARTED = 0;
+int GAME_IN_PROGRESS = 1;
+int GAME_OVER = 2;
+
+// game status
+int gameStatus = NOT_STARTED;
+
+int appleX;
+int appleY;
+int Xpin=A1;
+int Ypin=A0;
 int Spin=3;
 int Sval;
 float Xval;
@@ -25,27 +30,15 @@ float Yval;
 int Xm = 0;
 int Ym = 0;
 unsigned long time = 0;
+int Buzzpin = 4;
 
-long Mvdelay = 100;
+long Mvdelay = 200;
 
 int game = 0;
 CRGB colors[] = {
   CRGB::Red,        // Red
   CRGB::Green,      // Green
-  CRGB::Blue,       // Blue
-  CRGB::White,      // White
-  CRGB::Yellow,     // Yellow
-  CRGB::Cyan,       // Cyan
-  CRGB::Magenta,    // Magenta
-  CRGB::Orange,     // Orange
-  CRGB::Purple,     // Purple
-  CRGB::Pink,       // Pink
-  CRGB::Lime,       // Lime
-  CRGB::Aqua,       // Aqua
-  CRGB::Teal,       // Teal
-  CRGB::Violet,     // Violet
-  CRGB::Gold,       // Gold
-  CRGB::Silver      // Silver
+  CRGB::Blue       // Blue
 };
 
 
@@ -59,6 +52,8 @@ int sign(float f) {
 }
 
 void set(int xcoor, int ycoor, CRGB color) {
+  if (xcoor < 0 || xcoor > 15 || ycoor < 0 || ycoor > 15) return;
+  
   int i;
   if ((ycoor%2)==0) {
     i = ycoor * 16 + xcoor;
@@ -79,6 +74,33 @@ void clear(CRGB color) {
   }
 }
 
+void reset() {
+  BodyL = 3;
+  X = 8;
+  Y = 8;
+  BodyX[0] = 8;
+  BodyX[1] = 8;
+  BodyX[2] = 8;
+  BodyY[0] = 8;
+  BodyY[1] = 7;
+  BodyY[2] = 6;
+}
+
+void castApple() {
+  appleX = random(0,16);
+  appleY = random(0,16);
+}
+
+void check() {
+  for (int i=0;i<BodyL;i++) {
+     if (X==BodyX[i] && Y==BodyY[i]) {
+      gameStatus = GAME_OVER;    
+      tone(Buzzpin,100, 500);
+      return;
+     }
+  }
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -87,6 +109,7 @@ void setup() {
   pinMode(Spin,INPUT);
   digitalWrite(Spin,HIGH);
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
+  pinMode(Buzzpin,OUTPUT);
 }
 
 void loop() {
@@ -96,36 +119,48 @@ void loop() {
   Xval=analogRead(Xpin);
   Yval=analogRead(Ypin);
   Sval=digitalRead(Spin);
-  Xval = (Xval - 511.0) / 512.0;
-  Yval = (Yval - 511.0) / 512.0;
-  if (abs(Xval)>0.5 || abs(Yval)>0.5) {
-    if (abs(Xval)>abs(Yval)) {
-      Xm = sign(Xval);
-      Ym = 0;
-      gameStatus = 1;
-    }
-    else
-    {
-      Ym = sign(Yval);
-      Xm = 0;
+  Xval = ((Xval - 511.0) / 512.0)*-1;
+  Yval = ((Yval - 511.0) / 512.0);
+
+  if (gameStatus == NOT_STARTED || gameStatus == GAME_IN_PROGRESS)  {
+    if (abs(Xval)>0.5 || abs(Yval)>0.5) {
+      if (abs(Xval)>abs(Yval)) {
+        Xm = sign(Xval);
+        Ym = 0;
+      }
+      else
+      {
+        Ym = sign(Yval);
+        Xm = 0;
+      }
+      if (gameStatus==NOT_STARTED) {
+        castApple();
+      }
+      gameStatus = GAME_IN_PROGRESS;
     }
   }
 
+  if (gameStatus == GAME_OVER && Sval == 0) {
+    gameStatus = NOT_STARTED;
+    reset();
+  }
 
   // calculations
   if (time<millis()) {
 
     // calculations
     // we do calculations only in game in progress mode
-    if (gameStatus==1) {
+    if (gameStatus==GAME_IN_PROGRESS) {
       X = X + Xm;
       Y = Y - Ym;
+      check();
       time = Mvdelay + millis();
 
       // border check   
       if (X>15 || Y>15 || X<0 || Y<0) {
         game++;
         gameStatus = 2;
+        tone(Buzzpin,100, 500);
       }
 
       // move body
@@ -134,9 +169,14 @@ void loop() {
         BodyY[i] = BodyY[i-1];
       }
 
-      // asign head
+      // assign head
       BodyX[0] = X;
       BodyY[0] = Y;
+      if (X==appleX && Y==appleY) {
+        BodyL++;
+        castApple();
+        tone(Buzzpin,1000, 100);
+      }
     }
 
     // clear matrix
@@ -146,8 +186,8 @@ void loop() {
     for (int i = 0; i<BodyL; i++) {
       set(BodyX[i], BodyY[i], CRGB::Green);
     }
-    set(BodyX[0], BodyY[0], CRGB::Red);
-
+    set(BodyX[0], BodyY[0], CRGB::Blue);
+    set(appleX, appleY, CRGB::Red);
     // show leds
     FastLED.show();
   }
