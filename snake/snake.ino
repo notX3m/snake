@@ -50,7 +50,7 @@ int sign(float f) {
     return -1;
   }
 }
-
+//This function that we wrote gets coordinates from the joystick and turns them into the correct number LED to light up.
 void set(int xcoor, int ycoor, CRGB color) {
   if (xcoor < 0 || xcoor > 15 || ycoor < 0 || ycoor > 15) return;
   
@@ -68,12 +68,14 @@ void set(int xcoor, int ycoor, CRGB color) {
   }
 }
 
+//This function that we wrote clears the matrix so the new position of the snake can be drawn.
 void clear(CRGB color) {
   for (int j=0;j<256;j++) {
     leds[j]=color;
   }
 }
 
+//This function that we wrote commences when the player clicks a button. It returns everything to a homeostasis so the player can play again.
 void reset() {
   BodyL = 3;
   X = 8;
@@ -86,11 +88,13 @@ void reset() {
   BodyY[2] = 6;
 }
 
+//This randomizes the apple position
 void castApple() {
   appleX = random(0,16);
   appleY = random(0,16);
 }
 
+//This checks if the head has knocked into the body. If it has, the buzzer tells us that it's game over and the function, "return;" just returns back to the beggining of, "void loop() {}"
 void check() {
   for (int i=0;i<BodyL;i++) {
      if (X==BodyX[i] && Y==BodyY[i]) {
@@ -101,6 +105,7 @@ void check() {
   }
 }
 
+//Just if you don't know, "void setup() {}" runs only once when starting the program unlike "void loop() {}" which runs forever.
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -122,6 +127,7 @@ void loop() {
   Xval = ((Xval - 511.0) / 512.0)*-1;
   Yval = ((Yval - 511.0) / 512.0);
 
+  // Checks the game status. If it is, "GAME_IN_PROGRESS"  It checks only if the joystick is past half of what it can go to the sides. If true, then it checks the closest direction were the joystick is pointing.
   if (gameStatus == NOT_STARTED || gameStatus == GAME_IN_PROGRESS)  {
     if (abs(Xval)>0.5 || abs(Yval)>0.5) {
       if (abs(Xval)>abs(Yval)) {
@@ -140,6 +146,7 @@ void loop() {
     }
   }
 
+  //Checks if you lost, if true then it wait's for the player to click on the joystick. When he does the function, "reset()" a function that we wrote, resets the game to a homeostasis.
   if (gameStatus == GAME_OVER && Sval == 0) {
     gameStatus = NOT_STARTED;
     reset();
@@ -149,7 +156,7 @@ void loop() {
   if (time<millis()) {
 
     // calculations
-    // we do calculations only in game in progress mode
+    // we do calculations only in game in progress mode.
     if (gameStatus==GAME_IN_PROGRESS) {
       X = X + Xm;
       Y = Y - Ym;
@@ -186,6 +193,7 @@ void loop() {
     for (int i = 0; i<BodyL; i++) {
       set(BodyX[i], BodyY[i], CRGB::Green);
     }
+    
     set(BodyX[0], BodyY[0], CRGB::Blue);
     set(appleX, appleY, CRGB::Red);
     // show leds
