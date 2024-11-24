@@ -4,7 +4,12 @@
 
 CRGB leds[NUM_LEDS];
 
-
+/*
+Notice that the the array below has only 64 numbers which limits the length of the snake to 64. You might be asking, "but doesn't our matrix have 256 LEDS" to which I wouuld say yes, you are correct.
+But here's the thing, if you are creating the portable box then this would be the best way to do it because the Arduino NANO just isn't as powerful than say the Arduino UNO. If you are not doing the 
+portable box then you can go ahead and change it to 256. By the way one way to open up some storage and make the body be bigger is making the int's with small numbers being stored in them into a thing
+called, "byte." Byte's do the same task as int's but store smaller numbers. Using byte helps save storage.
+*/
 int BodyX[64] = {8,8,8};
 int BodyY[64] = {8,7,6};
 int BodyL = 3;
@@ -193,7 +198,7 @@ void loop() {
     for (int i = 0; i<BodyL; i++) {
       set(BodyX[i], BodyY[i], CRGB::Green);
     }
-    
+
     set(BodyX[0], BodyY[0], CRGB::Blue);
     set(appleX, appleY, CRGB::Red);
     // show leds
